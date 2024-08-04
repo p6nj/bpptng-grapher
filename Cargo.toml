@@ -1,14 +1,18 @@
 [package]
-name = "grapher"
-version = "1.0.0"
+name = "bpptng-grapher"
+version = "0.1.0"
 edition = "2021"
-authors = ["Grant Handy <grantshandy@gmail.com>"]
-description = "A simple graphing calculator written in Rust."
+authors = [
+    "Grant Handy <grantshandy@gmail.com>",
+    "Breval Ferrari <breee@duck.com>",
+]
+description = "A simple graphing calculator for sound physicists 🧑‍🔬"
 license = "MIT"
+license-file = "LICENSE"
 readme = "README.md"
 repository = "https://github.com/grantshandy/grapher"
-categories = ["gui"]
-keywords = ["gui", "graph", "math"]
+categories = ["gui", "science", "multimedia"]
+keywords = ["gui", "graph", "math", "music", "sound"]
 build = "build.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -30,5 +34,5 @@ console_error_panic_hook = "0.1"
 winres = "0.1"
 
 [package.metadata.winres]
-OriginalFilename = "grapher.exe"
-LegalCopyright = "Copyright © 2022 Grant Handy"
+OriginalFilename = "bpptng-grapher.exe"
+LegalCopyright = "Copyright © 2022 Grant Handy, Copyright © 2024 Breval Ferrari"

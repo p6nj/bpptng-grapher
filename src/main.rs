@@ -4,6 +4,6 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "Grapher",
         eframe::NativeOptions::default(),
-        Box::new(|_| Ok(Box::new(grapher::Grapher::new()))),
+        Box::new(|_| Ok(Box::new(bpptng_grapher::Grapher::new()))),
     )
 }

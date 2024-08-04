@@ -1,6 +1,7 @@
-# grapher
-A simple graphing calculator written in Rust.
+# bpptng-grapher
+A simple graphing calculator for sound physicists 🧑‍🔬
 
-[Visit online](https://grantshandy.github.io/grapher/#(4*sin(x/4))+4,4*sin(x/4),(4*sin(x/4))+(2*cos(5*x))+2)
+This software is part of the Bleeperpreter NG project.
 
-![screenshot](./public/screenshot.png)
+
+This software is a slightly modified version of [grantshandy/grapher](https://github.com/grantshandy/grapher) designed to add audio visualization features. The license file for this software includes the original copyright notice.
