@@ -6,7 +6,9 @@ fn main() -> eframe::Result {
 
     let mut _stream = None;
     let mut stream_handle = None;
-    if let Ok((s, sh)) = OutputStream::try_default() {
+    if let Ok((s, sh)) = OutputStream::try_default()
+        .inspect_err(|e| eprintln!("could not open an audio stream: {e}"))
+    {
         _stream = Some(s);
         stream_handle = Some(sh);
     }

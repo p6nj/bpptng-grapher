@@ -1,3 +1,4 @@
+use audio::Math;
 use eframe::{
     egui::{
         self, CollapsingHeader, Frame, RichText, ScrollArea, SidePanel, Slider, Style, TextEdit,
@@ -9,9 +10,10 @@ use eframe::{
 use egui_plot::{Legend, Line, Plot, PlotPoints};
 use exmex::{Express, FlatEx};
 
+mod audio;
 mod web;
 
-use rodio::OutputStreamHandle;
+use rodio::{OutputStreamHandle, Sink};
 #[cfg(target_arch = "wasm32")]
 pub use web::start_web;
 
@@ -47,19 +49,19 @@ pub struct Grapher {
 
 impl Grapher {
     pub fn new(stream_handle: Option<OutputStreamHandle>) -> Self {
-        let mut data = Vec::new();
-
         cfg_if::cfg_if! {
             if #[cfg(target_arch = "wasm32")] {
+                let mut data = Vec::new();
                 let error: Option<String> = web::get_data_from_url(&mut data);
             } else {
+                let data = Vec::new();
                 let error: Option<String> = None;
             }
         }
 
-        if data.is_empty() {
-            data.push(Default::default());
-        }
+        // if data.is_empty() {
+        //     data.push(Default::default());
+        // }
 
         Self {
             data,
@@ -83,11 +85,11 @@ impl Grapher {
 
                 ui.horizontal_top(|ui| {
                     if self.data.len() < 18 && ui.button("New").clicked() {
-                        self.data.push(Default::default());
+                        self.data.push(FunctionEntry::new("", self.stream_handle.as_ref()));
                         outer_changed = true;
                     }
                     if self.data.len() < 18 && ui.button("Random").clicked() {
-                        let mut random: FunctionEntry = Random::random();
+                        let mut random = FunctionEntry::random(self.stream_handle.as_ref());
                         match exmex::parse::<f64>(&random.text) {
                             Ok(func) => {
                                 if func.var_names().len() > 1 {
@@ -135,7 +137,18 @@ impl Grapher {
                                     if func.var_names().len() > 1 {
                                         self.error = Some("too much variables, only one allowed".into());
                                     }
-                                    entry.func = Some(func);
+                                    else {
+                                        if self.stream_handle.is_some()  {
+                                            if let Some(ref sink) = entry.sink {
+                                                if !sink.empty() {
+                                                    sink.clear();
+                                                    if self.listening { sink.play(); }
+                                                }
+                                                sink.append(Math::new(exmex::parse::<f32>(&entry.text).unwrap()));
+                                            }
+                                        }
+                                        entry.func = Some(func);
+                                    }
                                 },
                                 Err(e) => {
                                     self.error = Some(e.to_string());
@@ -149,10 +162,15 @@ impl Grapher {
                     }
                 }
 
-                ui.add_enabled(
+                if ui.add_enabled(
                     self.stream_handle.is_some(),
                     egui::Checkbox::new(&mut self.listening, "Listen live")
-                );
+                ).changed() {
+                    match self.listening {
+                        true => self.all_sinks(Sink::play),
+                        false => self.all_sinks(Sink::pause),
+                    }
+                }
 
                 #[cfg(target_arch = "wasm32")]
                 if outer_changed {
@@ -180,6 +198,13 @@ impl Grapher {
                 });
             });
         });
+    }
+
+    fn all_sinks(&mut self, f: impl Fn(&Sink)) {
+        self.data
+            .iter_mut()
+            .filter(|f| f.sink.is_some())
+            .for_each(|e| f(unsafe { e.sink.as_ref().unwrap_unchecked() }));
     }
 
     fn graph(&mut self, ctx: &egui::Context) {
@@ -239,22 +264,33 @@ impl App for Grapher {
 }
 
 /// An entry in the sidebar
-#[derive(Clone, Debug, Default)]
+#[derive(Default)]
 pub struct FunctionEntry {
     pub text: String,
     pub func: Option<FlatEx<f64>>,
+    pub sink: Option<Sink>,
 }
 
-trait Random {
-    fn random() -> Self;
-}
-
-impl Random for FunctionEntry {
-    fn random() -> Self {
-        FunctionEntry {
-            text: random_expr(),
+impl Clone for FunctionEntry {
+    fn clone(&self) -> Self {
+        Self {
+            text: self.text.clone(),
+            func: self.func.clone(),
             ..Default::default()
         }
+    }
+}
+
+impl FunctionEntry {
+    fn new(text: impl ToString, stream: Option<&OutputStreamHandle>) -> Self {
+        Self {
+            text: text.to_string(),
+            sink: stream.and_then(|s| Sink::try_new(s).ok()),
+            ..Default::default()
+        }
+    }
+    fn random(stream: Option<&OutputStreamHandle>) -> Self {
+        FunctionEntry::new(random_expr(), stream)
     }
 }
 
