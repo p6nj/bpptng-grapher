@@ -121,11 +121,15 @@ impl Grapher {
                     if inner_changed {
                         self.error = None;
 
-                        entry.func = match exmex::parse::<f64>(&entry.text) {
-                            Ok(func) => Some(func),
+                        match exmex::parse::<f64>(&entry.text) {
+                            Ok(func) => {
+                                if func.var_names().len() > 1 {
+                                    self.error = Some("too much variables, only one allowed".into());
+                                }
+                                entry.func = Some(func);
+                            },
                             Err(e) => {
                                 self.error = Some(e.to_string());
-                                continue;
                             }
                         };
                     }
@@ -160,31 +164,23 @@ impl Grapher {
     }
 
     fn graph(&mut self, ctx: &egui::Context) {
-        let lines: Vec<Line> = self.data
+        let lines: Vec<Line> = self
+            .data
             .clone()
             .into_iter()
             .enumerate()
-            .filter_map(|(n, entry)|
+            .filter_map(|(n, entry)| {
                 entry.func.map(|func| {
                     let name = format!("y = {}", entry.text);
                     let values = PlotPoints::from_explicit_callback(
-                        move |x| match func.eval(&[x]) {
-                            Ok(y) => y,
-                            Err(e) => {
-                                // DIRTY HACK THEY DON'T WANT YOU TO KNOW ABOUT!
-                                if e.to_string() == "parsed expression contains 0 vars but passed slice has 1 elements" {
-                                    entry.text.parse().unwrap_or(0.0)
-                                } else {
-                                    0.0
-                                }
-                            }
-                        },
+                        move |x| func.eval(&[x]).unwrap_or_default(),
                         ..,
                         self.points,
                     );
 
                     Line::new(values).name(name).color(COLORS[n])
-            }))
+                })
+            })
             .collect();
 
         let frame = Frame::window(&Style::default()).inner_margin(Vec2 { x: 0.0, y: 0.0 });
