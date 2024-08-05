@@ -163,32 +163,32 @@ impl Grapher {
     }
 
     fn graph(&mut self, ctx: &egui::Context) {
-        let mut lines: Vec<Line> = Vec::new();
-
-        for (n, entry) in self.data.clone().into_iter().enumerate() {
-            if let Some(func) = entry.func {
-                let name = format!("y = {}", entry.text.clone());
-                let values = PlotPoints::from_explicit_callback(
-                    move |x| match func.eval(&[x]) {
-                        Ok(y) => y,
-                        Err(e) => {
-                            // DIRTY HACK THEY DON'T WANT YOU TO KNOW ABOUT!
-                            if e.to_string() == "parsed expression contains 0 vars but passed slice has 1 elements" {
-                                entry.text.parse().unwrap_or(0.0)
-                            } else {
-                                0.0
+        let lines: Vec<Line> = self.data
+            .clone()
+            .into_iter()
+            .enumerate()
+            .filter_map(|(n, entry)|
+                entry.func.map(|func| {
+                    let name = format!("y = {}", entry.text);
+                    let values = PlotPoints::from_explicit_callback(
+                        move |x| match func.eval(&[x]) {
+                            Ok(y) => y,
+                            Err(e) => {
+                                // DIRTY HACK THEY DON'T WANT YOU TO KNOW ABOUT!
+                                if e.to_string() == "parsed expression contains 0 vars but passed slice has 1 elements" {
+                                    entry.text.parse().unwrap_or(0.0)
+                                } else {
+                                    0.0
+                                }
                             }
-                        }
-                    },
-                    ..,
-                    self.points,
-                );
+                        },
+                        ..,
+                        self.points,
+                    );
 
-                let line = Line::new(values).name(name).color(COLORS[n]);
-
-                lines.push(line);
-            }
-        }
+                    Line::new(values).name(name).color(COLORS[n])
+            }))
+            .collect();
 
         let frame = Frame::window(&Style::default()).inner_margin(Vec2 { x: 0.0, y: 0.0 });
 
