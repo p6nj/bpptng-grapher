@@ -11,6 +11,7 @@ use exmex::{Express, FlatEx};
 
 mod web;
 
+use rodio::OutputStreamHandle;
 #[cfg(target_arch = "wasm32")]
 pub use web::start_web;
 
@@ -35,15 +36,17 @@ const COLORS: &[Color32; 18] = &[
     Color32::DARK_BLUE,
 ];
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Grapher {
     data: Vec<FunctionEntry>,
     error: Option<String>,
     points: usize,
+    stream_handle: Option<OutputStreamHandle>,
+    listening: bool,
 }
 
 impl Grapher {
-    pub fn new() -> Self {
+    pub fn new(stream_handle: Option<OutputStreamHandle>) -> Self {
         let mut data = Vec::new();
 
         cfg_if::cfg_if! {
@@ -55,13 +58,15 @@ impl Grapher {
         }
 
         if data.is_empty() {
-            data.push(FunctionEntry::new());
+            data.push(Default::default());
         }
 
         Self {
             data,
             error,
             points: 500,
+            stream_handle,
+            listening: false,
         }
     }
 
@@ -78,62 +83,72 @@ impl Grapher {
 
                 ui.horizontal_top(|ui| {
                     if self.data.len() < 18 && ui.button("Add").clicked() {
-                        self.data.push(FunctionEntry::new());
-                        outer_changed = true;
-                    }
-
-                    if self.data.len() > 1 && ui.button("Delete").clicked() {
-                        self.data.pop();
+                        self.data.push(Default::default());
                         outer_changed = true;
                     }
                 });
 
                 ui.add_space(4.5);
 
-                for (n, entry) in self.data.iter_mut().enumerate() {
-                    let mut inner_changed = false;
+                {
+                    let mut remove = None;
 
-                    let hint_text = match n {
-                        0 => "x^2",
-                        1 => "sin(x)",
-                        2 => "x+2",
-                        3 => "x*3",
-                        4 => "abs(x)",
-                        5 => "cos(x)",
-                        // most people won't go past 5 so i'll be lazy
-                        _ => "",
-                    };
+                    for (n, entry) in self.data.iter_mut().enumerate() {
+                        let mut inner_changed = false;
 
-                    ui.horizontal(|ui| {
-                        ui.label(RichText::new(" ").strong().background_color(COLORS[n]));
-
-                        if ui.add(TextEdit::singleline(&mut entry.text).hint_text(hint_text)).changed() {
-                            if !entry.text.is_empty() {
-                                inner_changed = true;
-                            } else {
-                                entry.func = None;
-                            }
-
-                            outer_changed = true;
-                        }
-                    });
-
-                    if inner_changed {
-                        self.error = None;
-
-                        match exmex::parse::<f64>(&entry.text) {
-                            Ok(func) => {
-                                if func.var_names().len() > 1 {
-                                    self.error = Some("too much variables, only one allowed".into());
-                                }
-                                entry.func = Some(func);
-                            },
-                            Err(e) => {
-                                self.error = Some(e.to_string());
-                            }
+                        let hint_text = match n {
+                            0 => "x^2",
+                            1 => "sin(x)",
+                            2 => "x+2",
+                            3 => "x*3",
+                            4 => "abs(x)",
+                            5 => "cos(x)",
+                            // most people won't go past 5 so i'll be lazy
+                            _ => "",
                         };
+
+                        ui.horizontal(|ui| {
+                            ui.label(RichText::new(" ").strong().background_color(COLORS[n]));
+
+                            if ui.add(TextEdit::singleline(&mut entry.text).hint_text(hint_text)).changed() {
+                                if !entry.text.is_empty() {
+                                    inner_changed = true;
+                                } else {
+                                    entry.func = None;
+                                }
+
+                                outer_changed = true;
+                            }
+
+                            if ui.button("X").clicked(){ remove = Some(n); }
+                        });
+
+                        if inner_changed {
+                            self.error = None;
+
+                            match exmex::parse::<f64>(&entry.text) {
+                                Ok(func) => {
+                                    if func.var_names().len() > 1 {
+                                        self.error = Some("too much variables, only one allowed".into());
+                                    }
+                                    entry.func = Some(func);
+                                },
+                                Err(e) => {
+                                    self.error = Some(e.to_string());
+                                }
+                            };
+                        }
+                    }
+
+                    if let Some(i) = remove {
+                        self.data.remove(i);
                     }
                 }
+
+                ui.add_enabled(
+                    self.stream_handle.is_some(),
+                    egui::Checkbox::new(&mut self.listening, "Listen live")
+                );
 
                 #[cfg(target_arch = "wasm32")]
                 if outer_changed {
@@ -206,7 +221,7 @@ impl Grapher {
 
 impl Default for Grapher {
     fn default() -> Self {
-        Self::new()
+        Self::new(Default::default())
     }
 }
 
@@ -220,23 +235,8 @@ impl App for Grapher {
 }
 
 /// An entry in the sidebar
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct FunctionEntry {
     pub text: String,
     pub func: Option<FlatEx<f64>>,
-}
-
-impl Default for FunctionEntry {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl FunctionEntry {
-    pub fn new() -> Self {
-        Self {
-            text: String::new(),
-            func: None,
-        }
-    }
 }

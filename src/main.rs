@@ -2,10 +2,18 @@
 
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result {
+    use rodio::OutputStream;
+
+    let mut _stream = None;
+    let mut stream_handle = None;
+    if let Ok((s, sh)) = OutputStream::try_default() {
+        _stream = Some(s);
+        stream_handle = Some(sh);
+    }
     eframe::run_native(
         "Grapher",
         eframe::NativeOptions::default(),
-        Box::new(|_| Ok(Box::new(bpptng_grapher::Grapher::new()))),
+        Box::new(|_| Ok(Box::new(bpptng_grapher::Grapher::new(stream_handle)))),
     )
 }
 
