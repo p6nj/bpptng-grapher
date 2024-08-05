@@ -1,3 +1,5 @@
+use std::ops::Add;
+
 use audio::Math;
 use eframe::{
     egui::{
@@ -45,6 +47,7 @@ pub struct Grapher {
     points: usize,
     stream_handle: Option<OutputStreamHandle>,
     listening: bool,
+    examples_index: usize,
 }
 
 impl Grapher {
@@ -52,7 +55,7 @@ impl Grapher {
         cfg_if::cfg_if! {
             if #[cfg(target_arch = "wasm32")] {
                 let mut data = Vec::new();
-                let error: Option<String> = web::get_data_from_url(&mut data);
+                let error: Option<String> = web::get_data_from_url(&mut data, stream_handle.as_ref());
             } else {
                 let data = Vec::new();
                 let error: Option<String> = None;
@@ -69,6 +72,7 @@ impl Grapher {
             points: 500,
             stream_handle,
             listening: false,
+            examples_index: 0,
         }
     }
 
@@ -89,7 +93,7 @@ impl Grapher {
                         outer_changed = true;
                     }
                     if self.data.len() < 18 && ui.button("Random").clicked() {
-                        let mut random = FunctionEntry::random(self.stream_handle.as_ref());
+                        let mut random = FunctionEntry::random(self.stream_handle.as_ref(), &mut self.examples_index);
                         match exmex::parse::<f64>(&random.text) {
                             Ok(func) => {
                                 if func.var_names().len() > 1 {
@@ -144,7 +148,7 @@ impl Grapher {
                                                     sink.clear();
                                                     if self.listening { sink.play(); }
                                                 }
-                                                sink.append(Math::new(exmex::parse::<f32>(&entry.text).unwrap()));
+                                                sink.append(Math::new(unsafe{exmex::parse::<f32>(&entry.text).unwrap_unchecked()}));
                                             }
                                         }
                                         entry.func = Some(func);
@@ -289,12 +293,15 @@ impl FunctionEntry {
             ..Default::default()
         }
     }
-    fn random(stream: Option<&OutputStreamHandle>) -> Self {
-        FunctionEntry::new(random_expr(), stream)
+    fn random(stream: Option<&OutputStreamHandle>, index: &mut usize) -> Self {
+        let rand = FunctionEntry::new(EXAMPLES[*index], stream);
+        *index = index.add(1).clamp(0, EXAMPLES_NUMBER);
+        rand
     }
 }
 
-const EXAMPLES: [&str; 20] = [
+const EXAMPLES_NUMBER: usize = 20;
+const EXAMPLES: [&str; EXAMPLES_NUMBER] = [
     "e^x * sin(x)",                     // Exponential Spiral
     "e^(-x) * cos(x)",                  // Damped Oscillation
     "sinh(x) + cosh(x)",                // Hyperbolic Combination
@@ -316,13 +323,6 @@ const EXAMPLES: [&str; 20] = [
     "log2(e^x)",                        // Logarithm with Exponential Base
     "sin(ln(x)) + cos(log10(x))",       // Combined Trigonometric and Logarithmic
 ];
-
-fn random_expr() -> String {
-    use rand::seq::SliceRandom;
-
-    let choiche = EXAMPLES.choose(&mut rand::thread_rng());
-    unsafe { choiche.unwrap_unchecked() }.to_string()
-}
 
 #[test]
 fn valid_example_expressions() {

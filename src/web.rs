@@ -7,15 +7,29 @@ use crate::Grapher;
 use eframe::wasm_bindgen::{self, prelude::*};
 
 #[cfg(target_arch = "wasm32")]
+use rodio::OutputStreamHandle;
+
+#[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 pub async fn start_web(canvas_id: &str) -> Result<(), eframe::wasm_bindgen::JsValue> {
+    use rodio::OutputStream;
+
     console_error_panic_hook::set_once();
+
+    let mut _stream = None;
+    let mut stream_handle = None;
+    if let Ok((s, sh)) = OutputStream::try_default()
+        .inspect_err(|e| eprintln!("could not open an audio stream: {e}"))
+    {
+        _stream = Some(s);
+        stream_handle = Some(sh);
+    }
 
     eframe::WebRunner::new()
         .start(
             canvas_id,
             Default::default(),
-            Box::new(|_| Ok(Box::new(Grapher::new()))),
+            Box::new(|_| Ok(Box::new(Grapher::new(stream_handle)))),
         )
         .await
 }
@@ -47,7 +61,14 @@ pub fn url_string_from_data(data: &Vec<FunctionEntry>) -> String {
 }
 
 #[cfg(target_arch = "wasm32")]
-pub fn get_data_from_url(data: &mut Vec<FunctionEntry>) -> Option<String> {
+pub fn get_data_from_url(
+    data: &mut Vec<FunctionEntry>,
+    stream_handle: Option<&OutputStreamHandle>,
+) -> Option<String> {
+    use rodio::Sink;
+
+    use crate::audio::Math;
+
     let href = web_sys::window()
         .expect("Couldn't get window")
         .document()
@@ -73,8 +94,17 @@ pub fn get_data_from_url(data: &mut Vec<FunctionEntry>) -> Option<String> {
     let mut error: Option<String> = None;
 
     for entry in func_string.split(',') {
-        let func = match exmex::parse::<f64>(&entry.replace("e", crate::EULER)) {
-            Ok(func) => Some(func),
+        let sink = stream_handle.and_then(|sh| Sink::try_new(sh).ok().inspect(|s| s.pause()));
+
+        let func = match exmex::parse::<f64>(entry) {
+            Ok(func) => {
+                if let Some(ref s) = sink {
+                    s.append(Math::new(unsafe {
+                        exmex::parse::<f32>(entry).unwrap_unchecked()
+                    }));
+                }
+                Some(func)
+            }
             Err(e) => {
                 error = Some(e.to_string());
                 None
@@ -84,6 +114,7 @@ pub fn get_data_from_url(data: &mut Vec<FunctionEntry>) -> Option<String> {
         data.push(FunctionEntry {
             text: entry.to_string(),
             func,
+            sink,
         });
     }
 
