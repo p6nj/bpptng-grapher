@@ -66,7 +66,7 @@ pub fn get_data_from_url(data: &mut Vec<FunctionEntry>) -> Option<String> {
         None => return None,
     };
 
-    if func_string == "" {
+    if func_string.is_empty() {
         return None;
     }
 

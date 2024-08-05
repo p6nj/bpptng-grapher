@@ -14,9 +14,9 @@ mod web;
 #[cfg(target_arch = "wasm32")]
 pub use web::start_web;
 
-pub const EULER: &'static str = "2.7182818284590452353602874713527";
+pub const EULER: &str = "2.7182818284590452353602874713527";
 
-const COLORS: &'static [Color32; 18] = &[
+const COLORS: &[Color32; 18] = &[
     Color32::RED,
     Color32::GREEN,
     Color32::YELLOW,
@@ -71,8 +71,8 @@ impl Grapher {
         SidePanel::left("left_panel").show(ctx, |ui| {
             ScrollArea::vertical().show(ui, |ui| {
                 ui.add_space(6.0);
-                ui.heading("Grapher");
-                ui.small("© 2022 Grant Handy");
+                ui.heading("BpptNG Grapher");
+                ui.small("© 2022 Grant Handy - © 2024 Breval Ferrari");
 
                 ui.separator();
 
@@ -110,7 +110,7 @@ impl Grapher {
                         ui.label(RichText::new(" ").strong().background_color(COLORS[n]));
 
                         if ui.add(TextEdit::singleline(&mut entry.text).hint_text(hint_text)).changed() {
-                            if entry.text != "" {
+                            if !entry.text.is_empty() {
                                 inner_changed = true;
                             } else {
                                 entry.func = None;
@@ -140,18 +140,18 @@ impl Grapher {
                 }
 
                 ui.separator();
-                ui.label("Grapher is a free and open source graphing calculator available online. Add functions on the left and they'll appear on the right in the graph.");
+                ui.label("BpptNG Grapher is a free and open source graphing calculator available online. Add functions on the left and they'll appear on the right in the graph.");
                 ui.label("Hold control and scroll to zoom and drag to move around the graph.");
-                ui.hyperlink_to("Source Code ", "https://github.com/grantshandy/grapher");
+                ui.hyperlink_to("Source Code ", "https://github.com/p6nj/bpptng-grapher");
                 #[cfg(not(target_arch = "wasm32"))]
                 ui.hyperlink_to("View Graph Online", {
-                    let mut base_url = "https://grantshandy.github.io/grapher/".to_string();
+                    let mut base_url = "https://p6nj.github.io/bpptng-grapher/".to_string();
                     base_url.push_str(&web::url_string_from_data(&self.data));
 
                     base_url
                 });
                 #[cfg(target_arch = "wasm32")]
-                ui.hyperlink_to("Download for Desktop", "https://github.com/grantshandy/grapher/releases");
+                ui.hyperlink_to("Download for Desktop", "https://github.com/p6nj/bpptng-grapher/releases");
                 ui.separator();
 
                 CollapsingHeader::new("Settings").show(ui, |ui| {
@@ -231,6 +231,12 @@ impl App for Grapher {
 pub struct FunctionEntry {
     pub text: String,
     pub func: Option<FlatEx<f64>>,
+}
+
+impl Default for FunctionEntry {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl FunctionEntry {
