@@ -8,10 +8,16 @@ use eframe::wasm_bindgen::{self, prelude::*};
 
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
-pub fn start_web(canvas_id: &str) -> Result<(), eframe::wasm_bindgen::JsValue> {
+pub async fn start_web(canvas_id: &str) -> Result<(), eframe::wasm_bindgen::JsValue> {
     console_error_panic_hook::set_once();
 
-    eframe::start_web(canvas_id, Box::new(Grapher::new()))
+    eframe::WebRunner::new()
+        .start(
+            canvas_id,
+            Default::default(),
+            Box::new(|_| Ok(Box::new(Grapher::new()))),
+        )
+        .await
 }
 
 #[cfg(target_arch = "wasm32")]

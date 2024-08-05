@@ -7,3 +7,4 @@ public/wasm/grapher_bg.wasm.d.ts
 public/wasm/grapher.d.ts
 public/wasm/grapher.js
 public/wasm/package.json
+.vscode

@@ -1,43 +1,47 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <link rel="icon" href="icon.png">
-    <title>Grapher</title>
-    <style>
-        html {
-            /* Remove touch delay: */
-            touch-action: manipulation;
-        }
 
-        html, body {
-            overflow: hidden;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
+<head>
+  <meta charset="utf-8">
+  <link rel="icon" href="icon.png">
+  <title>Grapher</title>
+  <style>
+    html {
+      /* Remove touch delay: */
+      touch-action: manipulation;
+    }
 
-        /* Position canvas in center-top: */
-        canvas {
-            margin-right: auto;
-            margin-left: auto;
-            display: block;
-            position: absolute;
-            top: 0%;
-            left: 50%;
-            transform: translate(-50%, 0%);
-        }
-    </style>
-  </head>
-  <body>
-    <canvas id="graph"></canvas>
-    <script type="module">
-        import init, {start_web} from './wasm/grapher.js';
+    html,
+    body {
+      overflow: hidden;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
 
-        (async () => {
-            await init();
+    /* Position canvas in center-top: */
+    canvas {
+      margin-right: auto;
+      margin-left: auto;
+      display: block;
+      position: absolute;
+      top: 0%;
+      left: 50%;
+      transform: translate(-50%, 0%);
+    }
+  </style>
+</head>
 
-            start_web("graph");
-        })();
-    </script>
-  </body>
+<body>
+  <canvas id="graph"></canvas>
+  <script type="module">
+    import init, { start_web } from './wasm/grapher.js';
+
+    (async () => {
+      await init();
+
+      await start_web("graph");
+    })();
+  </script>
+</body>
+
 </html>

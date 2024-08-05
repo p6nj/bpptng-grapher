@@ -7,7 +7,6 @@ authors = [
     "Breval Ferrari <breee@duck.com>",
 ]
 description = "A simple graphing calculator for sound physicists 🧑‍🔬"
-license = "MIT"
 license-file = "LICENSE"
 readme = "README.md"
 repository = "https://github.com/grantshandy/grapher"
@@ -28,6 +27,7 @@ cfg-if = "1"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 web-sys = { version = "0.3", features = ["Window", "Location", "History"] }
+wasm-bindgen-futures = "0.4"
 console_error_panic_hook = "0.1"
 
 [target.'cfg(target_os = "windows")'.build-dependencies]
