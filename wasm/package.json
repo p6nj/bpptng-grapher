@@ -1,0 +1,32 @@
+{
+  "name": "bpptng-grapher",
+  "type": "module",
+  "collaborators": [
+    "Grant Handy <grantshandy@gmail.com>",
+    "Breval Ferrari <breee@duck.com>"
+  ],
+  "description": "A simple graphing calculator for sound physicists 🧑‍🔬",
+  "version": "0.1.0",
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/grantshandy/grapher"
+  },
+  "files": [
+    "bpptng_grapher_bg.wasm",
+    "bpptng_grapher.js",
+    "bpptng_grapher.d.ts"
+  ],
+  "main": "bpptng_grapher.js",
+  "types": "bpptng_grapher.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ],
+  "keywords": [
+    "gui",
+    "graph",
+    "math",
+    "music",
+    "sound"
+  ]
+}
