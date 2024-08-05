@@ -14,8 +14,6 @@ mod web;
 #[cfg(target_arch = "wasm32")]
 pub use web::start_web;
 
-pub const EULER: &str = "2.7182818284590452353602874713527";
-
 const COLORS: &[Color32; 18] = &[
     Color32::RED,
     Color32::GREEN,
@@ -123,8 +121,7 @@ impl Grapher {
                     if inner_changed {
                         self.error = None;
 
-                        // for nathan
-                        entry.func = match exmex::parse::<f64>(&entry.text.replace("e", EULER)) {
+                        entry.func = match exmex::parse::<f64>(&entry.text) {
                             Ok(func) => Some(func),
                             Err(e) => {
                                 self.error = Some(e.to_string());
