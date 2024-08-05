@@ -82,9 +82,24 @@ impl Grapher {
                 let mut outer_changed = false;
 
                 ui.horizontal_top(|ui| {
-                    if self.data.len() < 18 && ui.button("Add").clicked() {
+                    if self.data.len() < 18 && ui.button("New").clicked() {
                         self.data.push(Default::default());
                         outer_changed = true;
+                    }
+                    if self.data.len() < 18 && ui.button("Random").clicked() {
+                        let mut random: FunctionEntry = Random::random();
+                        match exmex::parse::<f64>(&random.text) {
+                            Ok(func) => {
+                                if func.var_names().len() > 1 {
+                                    self.error = Some("too much variables, only one allowed".into());
+                                }
+                                random.func = Some(func);
+                            },
+                            Err(e) => {
+                                self.error = Some(e.to_string());
+                            }
+                        };
+                        self.data.push(random);
                     }
                 });
 
@@ -96,21 +111,10 @@ impl Grapher {
                     for (n, entry) in self.data.iter_mut().enumerate() {
                         let mut inner_changed = false;
 
-                        let hint_text = match n {
-                            0 => "x^2",
-                            1 => "sin(x)",
-                            2 => "x+2",
-                            3 => "x*3",
-                            4 => "abs(x)",
-                            5 => "cos(x)",
-                            // most people won't go past 5 so i'll be lazy
-                            _ => "",
-                        };
-
                         ui.horizontal(|ui| {
                             ui.label(RichText::new(" ").strong().background_color(COLORS[n]));
 
-                            if ui.add(TextEdit::singleline(&mut entry.text).hint_text(hint_text)).changed() {
+                            if ui.add(TextEdit::singleline(&mut entry.text)).changed() {
                                 if !entry.text.is_empty() {
                                     inner_changed = true;
                                 } else {
@@ -239,4 +243,54 @@ impl App for Grapher {
 pub struct FunctionEntry {
     pub text: String,
     pub func: Option<FlatEx<f64>>,
+}
+
+trait Random {
+    fn random() -> Self;
+}
+
+impl Random for FunctionEntry {
+    fn random() -> Self {
+        FunctionEntry {
+            text: random_expr(),
+            ..Default::default()
+        }
+    }
+}
+
+const EXAMPLES: [&str; 20] = [
+    "e^x * sin(x)",                     // Exponential Spiral
+    "e^(-x) * cos(x)",                  // Damped Oscillation
+    "sinh(x) + cosh(x)",                // Hyperbolic Combination
+    "ln(x) * tan(x)",                   // Logarithmic Spiral
+    "sin(x) * cos(x) + tan(x)",         // Complex Trigonometric
+    "sqrt(x^2 + x)",                    // Power and Root Combination
+    "fract(x) + trunc(x)",              // Fractional Part and Integer Part
+    "abs(sin(x))",                      // Absolute Sine
+    "tan(sinh(x))",                     // Tangent with Hyperbolic Sine
+    "exp(ln(x)) + log2(x)",             // Exponential Logarithm
+    "asin(x) + acos(x) + atan(x)",      // Inverse Trigonometric
+    "x^3 - 3*(x^2) + 3*x - 1 + sin(x)", // Polynomial with Trigonometric
+    "signum(x) * tanh(x)",              // Signum with Hyperbolic Tangent
+    "ceil(x) + floor(x)",               // Ceiling and Floor Combination
+    "e^sin(x)",                         // Exponential and Sine Combination
+    "cbrt(x) + cos(x)",                 // Cube Root and Cosine
+    "τ * cos(π * x)",                   // Tau and Pi Constants
+    "x^2 + log10(x)",                   // Quadratic Logarithm
+    "log2(e^x)",                        // Logarithm with Exponential Base
+    "sin(ln(x)) + cos(log10(x))",       // Combined Trigonometric and Logarithmic
+];
+
+fn random_expr() -> String {
+    use rand::seq::SliceRandom;
+
+    let choiche = EXAMPLES.choose(&mut rand::thread_rng());
+    unsafe { choiche.unwrap_unchecked() }.to_string()
+}
+
+#[test]
+fn valid_example_expressions() {
+    for example in EXAMPLES {
+        exmex::parse::<f32>(example).unwrap().eval(&[1.0]).unwrap();
+    }
 }
