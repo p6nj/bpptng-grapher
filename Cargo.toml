@@ -30,6 +30,9 @@ rodio = { version = "0.19", default-features = false }
 web-sys = { version = "0.3", features = ["Window", "Location", "History"] }
 wasm-bindgen-futures = "0.4"
 console_error_panic_hook = "0.1"
+rodio = { version = "0.19", default-features = false, features = [
+    "wasm-bindgen",
+] }
 
 [target.'cfg(target_os = "windows")'.build-dependencies]
 winres = "0.1"
