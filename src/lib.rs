@@ -3,13 +3,20 @@ use std::ops::Add;
 use audio::Math;
 use eframe::{
     egui::{
-        self, CollapsingHeader, Frame, RichText, ScrollArea, SidePanel, Slider, Style, TextEdit,
-        TextStyle, Visuals,
+        self, CollapsingHeader, Frame as EguiFrame, RichText, ScrollArea, SidePanel, Slider, Style,
+        TextEdit, TextStyle, Visuals,
     },
     epaint::{Color32, Vec2},
-    App,
 };
-use egui_plot::{Legend, Line, Plot, PlotPoints};
+cfg_if::cfg_if! {
+    if #[cfg(target_arch = "wasm32")] {
+        use egui::plot::{Line, Legend, Plot, Values as PlotPoints};
+        use eframe::epi::{App, Frame};
+    } else {
+        use egui_plot::{Legend, Line, Plot, PlotPoints};
+        use eframe::{Frame, App};
+    }
+}
 use exmex::{Express, FlatEx};
 
 mod audio;
@@ -231,7 +238,13 @@ impl Grapher {
             })
             .collect();
 
-        let frame = Frame::window(&Style::default()).inner_margin(Vec2 { x: 0.0, y: 0.0 });
+        cfg_if::cfg_if! {
+            if #[cfg(target_arch = "wasm32")] {
+                let frame = EguiFrame::window(&Style::default()).margin(Vec2 { x: 0.0, y: 0.0 });
+            } else {
+                let frame = EguiFrame::window(&Style::default()).inner_margin(Vec2 { x: 0.0, y: 0.0 });
+            }
+        }
 
         egui::CentralPanel::default().frame(frame).show(ctx, |ui| {
             if let Some(error) = &self.error {
@@ -259,11 +272,34 @@ impl Default for Grapher {
 }
 
 impl App for Grapher {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        ctx.set_visuals(Visuals::dark());
+    cfg_if::cfg_if! {
+        if #[cfg(target_arch = "wasm32")] {
+            fn name(&self) -> &str {
+                "Grapher"
+            }
 
-        self.side_panel(ctx);
-        self.graph(ctx);
+            // imma assume you aren't this cool
+            fn max_size_points(&self) -> Vec2 {
+                Vec2 {
+                    x: 4096.0,
+                    y: 2160.0,
+                }
+            }
+
+            fn update(&mut self, ctx: &egui::Context, _frame: &Frame) {
+                ctx.set_visuals(Visuals::dark());
+
+                self.side_panel(ctx);
+                self.graph(ctx);
+            }
+        } else {
+            fn update(&mut self, ctx: &egui::Context, _frame: &mut Frame) { // this mut sucks
+                ctx.set_visuals(Visuals::dark());
+
+                self.side_panel(ctx);
+                self.graph(ctx);
+            }
+        }
     }
 }
 

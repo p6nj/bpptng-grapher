@@ -20,11 +20,8 @@ build = "build.rs"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-eframe = "0.28"
-egui_plot = "0.28"
 exmex = "0.20"
 cfg-if = "1"
-rodio = { version = "0.19", default-features = false }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 web-sys = { version = "0.3", features = ["Window", "Location", "History"] }
@@ -33,6 +30,12 @@ console_error_panic_hook = "0.1"
 rodio = { version = "0.19", default-features = false, features = [
     "wasm-bindgen",
 ] }
+eframe = "0.17"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+rodio = { version = "0.19", default-features = false }
+eframe = "0.28"
+egui_plot = "0.28"
 
 [target.'cfg(target_os = "windows")'.build-dependencies]
 winres = "0.1"

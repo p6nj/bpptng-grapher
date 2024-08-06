@@ -11,7 +11,7 @@ use rodio::OutputStreamHandle;
 
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
-pub async fn start_web(canvas_id: &str) -> Result<(), eframe::wasm_bindgen::JsValue> {
+pub fn start_web(canvas_id: &str) -> Result<(), eframe::wasm_bindgen::JsValue> {
     use rodio::OutputStream;
 
     console_error_panic_hook::set_once();
@@ -25,13 +25,7 @@ pub async fn start_web(canvas_id: &str) -> Result<(), eframe::wasm_bindgen::JsVa
         stream_handle = Some(sh);
     }
 
-    eframe::WebRunner::new()
-        .start(
-            canvas_id,
-            Default::default(),
-            Box::new(|_| Ok(Box::new(Grapher::new(stream_handle)))),
-        )
-        .await
+    eframe::start_web(canvas_id, Box::new(Grapher::new(stream_handle)))
 }
 
 #[cfg(target_arch = "wasm32")]
